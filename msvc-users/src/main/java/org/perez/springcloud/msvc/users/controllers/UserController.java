@@ -1,13 +1,17 @@
 package org.perez.springcloud.msvc.users.controllers;
 
+import jakarta.validation.Valid;
 import org.perez.springcloud.msvc.users.models.entity.User;
 import org.perez.springcloud.msvc.users.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @RestController
@@ -32,12 +36,22 @@ public class UserController {
     }
 
     @PostMapping
-    public ResponseEntity<?> save(@RequestBody User user) {
+    public ResponseEntity<?> save(@Valid @RequestBody User user, BindingResult result) {
+        // error handling
+        if(result.hasErrors()){
+            return validate(result);
+        }
+
         return ResponseEntity.status(HttpStatus.CREATED).body(userService.save(user));
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<?> update(@RequestBody User user, @PathVariable Long id) {
+    public ResponseEntity<?> update(@Valid @RequestBody User user, BindingResult result, @PathVariable Long id) {
+        // error handling
+        if(result.hasErrors()){
+            return validate(result);
+        }
+
         Optional<User> userOptional = userService.findById(id);
         if(userOptional.isPresent()){
             User userDb = userOptional.get();
@@ -59,6 +73,15 @@ public class UserController {
         } else{
             return ResponseEntity.notFound().build();
         }
+    }
+
+
+    private static ResponseEntity<Map<String, Object>> validate(BindingResult result) {
+        Map<String, Object> errors = new HashMap<>();
+        result.getFieldErrors().forEach(err -> {
+            errors.put(err.getField(), "The field " + err.getField() + " " + err.getDefaultMessage());
+        });
+        return ResponseEntity.badRequest().body(errors);
     }
 
 }

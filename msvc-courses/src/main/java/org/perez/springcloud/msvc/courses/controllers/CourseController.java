@@ -1,13 +1,17 @@
 package org.perez.springcloud.msvc.courses.controllers;
 
+import jakarta.validation.Valid;
 import org.perez.springcloud.msvc.courses.entity.Course;
 import org.perez.springcloud.msvc.courses.services.CourseService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @RestController
@@ -32,13 +36,23 @@ public class CourseController {
     }
 
     @PostMapping("/")
-    public ResponseEntity<?> createCourse(@RequestBody Course course) {
+    public ResponseEntity<?> createCourse(@Valid @RequestBody Course course, BindingResult result) {
+        // error handling
+        if(result.hasErrors()){
+            return validate(result);
+        }
+
         Course courseDB = courseService.saveCourse(course);
         return ResponseEntity.status(HttpStatus.CREATED).body(courseDB);
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<?> updateCourse(@RequestBody Course course, @PathVariable Long id) {
+    public ResponseEntity<?> updateCourse(@Valid @RequestBody Course course, BindingResult result, @PathVariable Long id) {
+        // error handling
+        if(result.hasErrors()){
+            return validate(result);
+        }
+
         Optional<Course> courseOptional = courseService.getCourseById(id);
         if(!courseOptional.isPresent()){
             return ResponseEntity.notFound().build();
@@ -57,4 +71,12 @@ public class CourseController {
         }
     }
 
+
+    private static ResponseEntity<Map<String, Object>> validate(BindingResult result) {
+        Map<String, Object> errors = new HashMap<>();
+        result.getFieldErrors().forEach(err -> {
+            errors.put(err.getField(), "The field " + err.getField() + " " + err.getDefaultMessage());
+        });
+        return ResponseEntity.badRequest().body(errors);
+    }
 }
