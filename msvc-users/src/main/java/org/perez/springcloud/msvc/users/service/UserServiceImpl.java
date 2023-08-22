@@ -1,5 +1,6 @@
 package org.perez.springcloud.msvc.users.service;
 
+import org.perez.springcloud.msvc.users.clients.CourseClientRest;
 import org.perez.springcloud.msvc.users.models.entity.User;
 import org.perez.springcloud.msvc.users.repositories.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,10 +14,12 @@ import java.util.Optional;
 public class UserServiceImpl implements UserService {
 
     private UserRepository userRepository;
+    private CourseClientRest clientRest;
 
     @Autowired
-    public UserServiceImpl(UserRepository userRepository) {
+    public UserServiceImpl(UserRepository userRepository, CourseClientRest clientRest) {
         this.userRepository = userRepository;
+        this.clientRest = clientRest;
     }
 
     @Override
@@ -41,5 +44,22 @@ public class UserServiceImpl implements UserService {
     @Transactional
     public void deleteById(Long id) {
         userRepository.deleteById(id);
+        clientRest.deleteCourseUserById(id);
+    }
+
+    @Override
+    @Transactional(readOnly=true)
+    public List<User> listByIds(Iterable<Long> ids) {
+        return (List<User>) userRepository.findAllById(ids);
+    }
+
+    @Override
+    public Optional<User> findByEmail(String email) {
+        return userRepository.findByEmail(email);
+    }
+
+    @Override
+    public boolean existsByEmail(String email) {
+        return userRepository.existsByEmail(email);
     }
 }
